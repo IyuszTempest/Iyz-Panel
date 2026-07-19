@@ -1,0 +1,2249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iyz Panel</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+    
+    <style>
+        :root {
+            --vs-red: #ff453a;
+            --vs-orange: #ff9f0a;
+            --vs-green: #30d158;
+            --vs-yellow: #ffd60a;
+            --text-main: #f5f5f7;
+            --text-muted: #feffff;
+            --transition-speed: 0.25s;
+
+            /* Frosted Glass Dynamic Variables */
+            --panel-bg-opacity: 0.85;
+            --panel-blur: 12px;
+            --bg-custom-image: none;
+        }
+
+        /* TEMA GELAP BERWARNA & RGB UNTUK OPACITY MASK */
+        body.theme-blue {
+            --bg-dark: #070b12;
+            --bg-sidebar-rgb: 11, 19, 32;
+            --bg-card-rgb: 18, 30, 51;
+            --border-color: #1e3250;
+            --accent-color: #0a84ff;
+            --accent-glow: rgba(10, 132, 255, 0.3);
+            --accent-hover: #ffffff;
+            --bg-btn-primary: #0056b3;
+            --bg-btn-primary-hover: #0a84ff;
+        }
+
+        body.theme-red {
+            --bg-dark: #0f0606;
+            --bg-sidebar-rgb: 23, 11, 11;
+            --bg-card-rgb: 37, 18, 18;
+            --border-color: #3d1b1b;
+            --accent-color: #ff453a;
+            --accent-glow: rgba(255, 69, 58, 0.3);
+            --accent-hover: #ffffff;
+            --bg-btn-primary: #8f1d18;
+            --bg-btn-primary-hover: #ff453a;
+        }
+
+        body.theme-yellow {
+            --bg-dark: #0d0b03;
+            --bg-sidebar-rgb: 21, 17, 5;
+            --bg-card-rgb: 34, 28, 9;
+            --border-color: #3b3010;
+            --accent-color: #ffd60a;
+            --accent-glow: rgba(255, 214, 10, 0.3);
+            --accent-hover: #fffffe;
+            --bg-btn-primary: #8f7200;
+            --bg-btn-primary-hover: #ffd60a;
+        }
+
+        body.theme-green {
+            --bg-dark: #040d06;
+            --bg-sidebar-rgb: 8, 23, 11;
+            --bg-card-rgb: 15, 38, 19;
+            --border-color: #1a3d1f;
+            --accent-color: #30d158;
+            --accent-glow: rgba(48, 209, 88, 0.3);
+            --accent-hover: #fdfffd;
+            --bg-btn-primary: #156627;
+            --bg-btn-primary-hover: #30d158;
+        }
+
+        body.theme-magenta {
+            --bg-dark: #0e0514;
+            --bg-sidebar-rgb: 22, 8, 32;
+            --bg-card-rgb: 36, 14, 51;
+            --border-color: #3c1654;
+            --accent-color: #bf5af2;
+            --accent-glow: rgba(191, 90, 242, 0.3);
+            --accent-hover: #fffeff;
+            --bg-btn-primary: #6c2394;
+            --bg-btn-primary-hover: #bf5af2;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-image: var(--bg-custom-image);
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            line-height: 1.5;
+            transition: background-color var(--transition-speed) ease;
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 6px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+
+        /* GLASSMORPHISM GLOBAL OVERRIDES */
+        .sidebar {
+            width: 280px;
+            background-color: rgba(var(--bg-sidebar-rgb), var(--panel-bg-opacity));
+            backdrop-filter: blur(var(--panel-blur));
+            -webkit-backdrop-filter: blur(var(--panel-blur));
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            flex-shrink: 0;
+            transition: width var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1), background-color var(--transition-speed) ease;
+            position: relative;
+            z-index: 100;
+        }
+
+        .sidebar.collapsed {
+            width: 78px;
+        }
+
+        .brand {
+            font-size: 1.15rem;
+            font-weight: 600;
+            padding: 24px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            overflow: hidden;
+            white-space: nowrap;
+            transition: padding var(--transition-speed), justify-content var(--transition-speed);
+        }
+
+        .sidebar.collapsed .brand {
+            justify-content: center;
+            padding: 24px 10px;
+        }
+
+        /* Sembunyikan Logo GitHub utama saat mengecil agar tidak tabrakan dengan hamburger */
+        .sidebar.collapsed .brand > svg {
+            display: none;
+        }
+
+        .sidebar.collapsed .brand span, 
+        .sidebar.collapsed .brand .badge {
+            display: none;
+        }
+
+        .brand .badge {
+            background-color: rgba(36, 36, 37, 0.541);
+            color: var(--accent-hover);
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: 2em;
+            border: 1px solid rgba(44, 45, 46, 0.4);
+            margin-left: auto;
+        }
+
+        .sidebar-toggle-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s, background-color 0.2s;
+        }
+
+        .sidebar-toggle-btn:hover {
+            color: var(--text-main);
+            background-color: rgba(255, 255, 255, 0.08);
+        }
+
+        .menu-list {
+            list-style: none;
+            padding: 15px 10px;
+        }
+
+        .menu-item {
+            border-radius: 6px;
+            margin-bottom: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            overflow: hidden;
+        }
+
+        .menu-item a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            padding: 10px 14px;
+            font-size: 0.9rem;
+            gap: 12px;
+            white-space: nowrap;
+        }
+
+        /* HANYA sembunyikan teks menu biasa, biarkan span Material Symbols tetap aktif */
+        .sidebar.collapsed .menu-item a span:not(.material-symbols-outlined) {
+            display: none;
+        }
+
+        .sidebar.collapsed .menu-item a {
+            justify-content: center;
+            padding: 10px 0;
+            font-size: 1.2rem;
+        }
+
+        .menu-item:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .menu-item:hover a {
+            color: var(--text-main);
+        }
+
+        .menu-item.active {
+            background-color: rgba(255, 255, 255, 0.08);
+            border-left: 4px solid var(--accent-color);
+        }
+
+        .menu-item.active a {
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        .user-profile {
+            padding: 16px 20px;
+            border-top: 1px solid var(--border-color);
+            background-color: rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            overflow: hidden;
+            transition: padding var(--transition-speed);
+        }
+
+        .sidebar.collapsed .user-profile {
+            padding: 16px 10px;
+            justify-content: center;
+        }
+
+        .sidebar.collapsed .user-info,
+        .sidebar.collapsed .logout-link {
+            display: none;
+        }
+
+        .user-avatar-container {
+            position: relative;
+            width: 40px;
+            height: 40px;
+            flex-shrink: 0;
+        }
+
+        .user-avatar {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 1.5px solid var(--border-color);
+            background-color: var(--bg-dark);
+        }
+
+        .user-info {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            flex-grow: 1;
+        }
+
+        .user-name-display {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-main);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .user-role {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .logout-link {
+            color: var(--vs-red);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+            font-size: 1.1rem;
+        }
+
+        .logout-link:hover {
+            opacity: 1;
+        }
+
+        .main-content {
+            flex-grow: 1;
+            padding: 30px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            transition: background-color var(--transition-speed) ease;
+        }
+
+        .page-section {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .page-section.active {
+            display: flex;
+        }
+
+        .header-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 16px;
+        }
+
+        .header-panel h2 {
+            font-size: 1.4rem;
+            font-weight: 600;
+        }
+
+        .controls {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        /* Buttons Styling */
+        .btn {
+            padding: 8px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.85rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s cubic-bezier(0.3, 0, 0.5, 1);
+            user-select: none;
+        }
+
+        .btn-start {
+            background-color: var(--bg-btn-primary);
+            color: #ffffff;
+            border-color: rgba(240, 246, 252, 0.1);
+        }
+        .btn-start:hover {
+            background-color: var(--bg-btn-primary-hover);
+            box-shadow: 0 0 12px var(--accent-glow);
+        }
+
+        .btn-accent {
+            background-color: rgb(63, 3, 3);
+            color: var(--text-main);
+            border-color: var(--border-color);
+        }
+        .btn-accent:hover {
+            background-color: rgba(240, 0, 0, 0.1);
+            border-color: var(--text-muted);
+        }
+
+        .btn-stop {
+            background-color: var(--vs-red);
+            color: #ffffff;
+            border-color: rgba(240, 246, 252, 0.1);
+        }
+        .btn-stop:hover {
+            background-color: #ff3b30;
+        }
+
+        .btn-sec {
+            background-color: rgba(63, 59, 59, 0.562);
+            color: var(--text-main);
+            border-color: var(--border-color);
+        }
+        .btn-sec:hover {
+            background-color: rgba(255, 255, 255, 0.507);
+        }
+
+        /* Terminal styling with Glassmorphism support */
+        .terminal-container {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            background-color: rgba(3, 5, 8, var(--panel-bg-opacity));
+            backdrop-filter: blur(var(--panel-blur));
+            -webkit-backdrop-filter: blur(var(--panel-blur));
+            box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.8);
+        }
+
+        .terminal-box {
+            flex-grow: 1;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+            font-family: ui-monospace, SFMono-Regular, monospace;
+            font-size: 0.85rem;
+            color: #e6edf3;
+            padding: 20px;
+            border: none;
+            box-shadow: none;
+            height: 350px;
+        }
+
+        .terminal-input-bar {
+            display: flex;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.35);
+            padding: 12px 20px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .terminal-prompt-symbol {
+            font-family: ui-monospace, SFMono-Regular, monospace;
+            color: var(--vs-green);
+            margin-right: 12px;
+            font-weight: bold;
+            font-size: 0.85rem;
+            transition: color 0.3s;
+        }
+
+        .terminal-text-input {
+            flex-grow: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #30d158;
+            font-family: ui-monospace, SFMono-Regular, monospace;
+            font-size: 0.85rem;
+            width: 100%;
+        }
+
+        /* File manager layout */
+        .fm-tools {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+
+        .loader-inline {
+            display: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--border-color);
+            border-top: 2px solid var(--accent-color);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .fm-table-container {
+            background-color: rgba(var(--bg-sidebar-rgb), var(--panel-bg-opacity));
+            backdrop-filter: blur(var(--panel-blur));
+            -webkit-backdrop-filter: blur(var(--panel-blur));
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 12px 18px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background-color: rgba(0, 0, 0, 0.2);
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        tbody tr {
+            transition: background-color 0.15s ease;
+        }
+
+        tbody tr:hover {
+            background-color: rgba(255, 255, 255, 0.03);
+        }
+
+        .action-link {
+            color: var(--accent-hover);
+            cursor: pointer;
+            margin-right: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            background-color: rgba(65, 59, 59, 0.493);
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: inline-block;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+        .action-link:hover {
+            background-color: var(--accent-color);
+            color: #ffffff;
+            border-color: rgba(94, 90, 90, 0.658);
+        }
+
+        .action-link.unzip-link {
+            color: var(--vs-green);
+            background-color: rgb(251, 255, 252);
+        }
+        .action-link.unzip-link:hover {
+            background-color: var(--vs-green);
+            color: #000;
+        }
+
+        /* Settings Card Design */
+        .settings-container {
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            gap: 32px;
+            align-items: start;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .settings-container {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+        }
+
+        .settings-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            border-right: 1px solid var(--border-color);
+            padding-right: 16px;
+        }
+
+        @media (max-width: 768px) {
+            .settings-nav {
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+                padding-right: 0;
+                padding-bottom: 16px;
+                flex-direction: row;
+                overflow-x: auto;
+            }
+        }
+
+        .settings-nav-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            padding: 10px 14px;
+            text-align: left;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .settings-nav-btn:hover {
+            background-color: rgba(68, 64, 64, 0.315);
+            color: var(--text-main);
+        }
+
+        .settings-nav-btn.active {
+            background-color: rgba(60, 60, 61, 0.37);
+            color: var(--accent-hover);
+            font-weight: 600;
+        }
+
+        .settings-content-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .settings-section-card {
+            display: none;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .settings-section-card.active {
+            display: flex;
+        }
+
+        .gh-box {
+            background-color: rgba(var(--bg-card-rgb), var(--panel-bg-opacity));
+            backdrop-filter: blur(var(--panel-blur));
+            -webkit-backdrop-filter: blur(var(--panel-blur));
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .gh-box-header {
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .gh-box-header h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .gh-box-header p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .gh-box-body {
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .profile-settings-layout {
+            display: grid;
+            grid-template-columns: 1fr 200px;
+            gap: 40px;
+        }
+
+        @media (max-width: 580px) {
+            .profile-settings-layout {
+                grid-template-columns: 1fr;
+                gap: 24px;
+            }
+        }
+
+        .avatar-uploader-column {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .avatar-preview-wrapper {
+            position: relative;
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 2px solid var(--border-color);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        .avatar-preview-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .avatar-edit-overlay {
+            position: absolute;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            cursor: pointer;
+            color: #ffffff;
+            font-size: 0.8rem;
+            font-weight: 500;
+            text-align: center;
+            padding: 10px;
+        }
+
+        .avatar-preview-wrapper:hover .avatar-edit-overlay {
+            opacity: 1;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group label {
+            color: var(--text-main);
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .form-group input[type="text"], 
+        .form-group input[type="range"],
+        .form-group textarea {
+            background-color: rgba(0, 0, 0, 0.25);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 8px 12px;
+            color: var(--text-main);
+            font-size: 0.9rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            width: 100%;
+        }
+
+        .form-group input[type="text"]:focus, 
+        .form-group textarea:focus {
+            border-color: var(--accent-color);
+            outline: none;
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .form-group input[type="range"] {
+            padding: 4px;
+            cursor: pointer;
+        }
+
+        .form-group p.help-text {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .color-options {
+            display: flex;
+            gap: 12px;
+            margin-top: 5px;
+            flex-wrap: wrap;
+        }
+
+        .color-dot-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+        }
+
+        .color-dot {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            transition: transform 0.2s, border-color 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+
+        .color-dot-container:hover .color-dot {
+            transform: scale(1.1);
+        }
+
+        .color-dot-container.active .color-dot {
+            border-color: #ffffff;
+            box-shadow: 0 0 12px var(--accent-color);
+            transform: scale(1.05);
+        }
+
+        .color-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            transition: color 0.2s;
+        }
+
+        .color-dot-container.active .color-label {
+            color: var(--text-main);
+            font-weight: bold;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-content {
+            background-color: rgba(var(--bg-sidebar-rgb), var(--panel-bg-opacity));
+            backdrop-filter: blur(var(--panel-blur));
+            -webkit-backdrop-filter: blur(var(--panel-blur));
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            width: 80%;
+            height: 80%;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 12px 28px rgba(0,0,0,0.6);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .editor-textarea {
+            flex-grow: 1;
+            background-color: #010409;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: #e6edf3;
+            padding: 15px;
+            font-family: ui-monospace, SFMono-Regular, monospace;
+            font-size: 0.85rem;
+            resize: none;
+            outline: none;
+            line-height: 1.5;
+        }
+
+        .editor-textarea:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        /* Toast notifications */
+        .toast-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 9999;
+        }
+
+        .toast {
+            background-color: rgba(var(--bg-sidebar-rgb), 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 12px 20px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+            transform: translateY(20px);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+            border-left: 4px solid var(--accent-color);
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success {
+            border-left-color: var(--vs-green);
+        }
+
+        .toast.error {
+            border-left-color: var(--vs-red);
+        }
+
+        /* PREMIUM iOS-STYLE DIALOG & MODAL SYSTEM */
+        .ios-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+        }
+
+        .ios-modal-overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .ios-modal {
+            width: 290px;
+            background: rgba(28, 28, 30, 0.85);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1.5px solid rgba(255, 255, 255, 0.12);
+            border-radius: 14px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 16px 36px rgba(0,0,0,0.5);
+            transform: scale(1.15);
+            transition: transform 0.25s cubic-bezier(0.15, 0.85, 0.3, 1.1);
+        }
+
+        .ios-modal-overlay.show .ios-modal {
+            transform: scale(1);
+        }
+
+        .ios-modal-content {
+            padding: 20px 16px;
+            text-align: center;
+            border-bottom: 0.5px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .ios-modal-title {
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 4px;
+        }
+
+        .ios-modal-body {
+            font-size: 0.85rem;
+            color: #e5e5ea;
+            line-height: 1.35;
+        }
+
+        .ios-modal-input {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.35);
+            border: 0.5px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            padding: 6px 10px;
+            color: #ffffff;
+            font-size: 0.85rem;
+            margin-top: 12px;
+            outline: none;
+        }
+        .ios-modal-input:focus {
+            border-color: var(--accent-color);
+        }
+
+        .ios-modal-buttons {
+            display: flex;
+            width: 100%;
+        }
+
+        .ios-modal-buttons.stacked {
+            flex-direction: column;
+        }
+
+        .ios-btn {
+            flex: 1;
+            background: none;
+            border: none;
+            padding: 12px 10px;
+            font-size: 0.95rem;
+            color: var(--accent-color);
+            font-weight: 400;
+            cursor: pointer;
+            outline: none;
+            text-align: center;
+            transition: background-color 0.15s;
+        }
+        .ios-btn:active {
+            background-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .ios-btn.bold {
+            font-weight: 600;
+        }
+
+        .ios-btn.danger {
+            color: var(--vs-red);
+        }
+
+        .ios-btn.cancel {
+            border-right: 0.5px solid rgba(255, 255, 255, 0.15);
+        }
+        .ios-modal-buttons.stacked .ios-btn {
+            border-right: none;
+            border-bottom: 0.5px solid rgba(255, 255, 255, 0.15);
+        }
+        .ios-modal-buttons.stacked .ios-btn:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body class="theme-blue">
+
+    <!-- SIDEBAR PANEL -->
+    <div class="sidebar" id="main-sidebar">
+        <div>
+            <div class="brand">
+                <svg height="24" viewBox="0 0 16 16" version="1.1" width="24" fill="currentColor" style="color:var(--text-main); flex-shrink:0;">
+                    <path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.35 2.69.91 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"></path>
+                </svg>
+                <span style="font-weight: 700;">MyPanel</span>
+                <div class="badge">v2.5</div>
+                <button class="sidebar-toggle-btn" id="sidebar-toggle" title="Toggle Sidebar" onclick="toggleSidebar()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <ul class="menu-list">
+                <li class="menu-item active" id="m-console" onclick="switchTab('console')">
+                    <a>
+                        <span class="material-symbols-outlined">terminal</span>
+                        <span>Console</span>
+                    </a>
+                </li>
+                <li class="menu-item" id="m-monitor" onclick="switchTab('monitor')">
+                    <a>
+                        <span class="material-symbols-outlined">monitoring</span>
+                        <span>Server Monitor</span>
+                    </a>
+                </li>
+                <li class="menu-item" id="m-files" onclick="switchTab('files')">
+                    <a>
+                        <span class="material-symbols-outlined">folder_open</span>
+                        <span>File Manager</span>
+                    </a>
+                </li>
+                <li class="menu-item" id="m-settings" onclick="switchTab('settings')">
+                    <a>
+                        <span class="material-symbols-outlined">settings</span>
+                        <span>Settings</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+        
+        <!-- Sidebar User Profile Area -->
+        <div class="user-profile">
+            <div class="user-avatar-container">
+                <img id="sidebar-avatar" src="https://placehold.co/80x80/21262d/8b949e?text=PRO" alt="Profile" class="user-avatar">
+            </div>
+            <div class="user-info">
+                <span id="sidebar-name" class="user-name-display">You</span>
+                <span class="user-role">Administrator</span>
+            </div>
+            <a href="/api/logout" class="logout-link" title="Logout System">
+                <svg height="16" viewBox="0 0 16 16" version="1.1" width="16" fill="currentColor">
+                    <path d="M2 2.75C2 1.784 2.784 1 3.75 1h2.5a.75.75 0 0 1 0 1.5h-2.5a.25.25 0 0 0-.25.25v10.5c0 .138.112.25.25.25h2.5a.75.75 0 0 1 0 1.5h-2.5A1.75 1.75 0 0 1 2 13.25Zm10.44 4.5H6.75a.75.75 0 0 0 0 1.5h5.69l-1.97 1.97a.75.75 0 1 0 1.06 1.06l3.25-3.25a.75.75 0 0 0 0-1.06l-3.25-3.25a.75.75 0 1 0-1.06 1.06Z"></path>
+                </svg>
+            </a>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT CONTAINER -->
+    <div class="main-content">
+
+        <!-- TAB 1: CONSOLE -->
+        <div id="sec-console" class="page-section active">
+            <div class="header-panel">
+                <div>
+                    <h2>IyzPanel</h2>
+                    <p style="color:var(--text-muted)">Status: <span id="status-text">OFFLINE</span></p>
+                </div>
+                <div class="controls">
+                    <button class="btn btn-start" onclick="socket.emit('action', 'START')">▶ Run Start Command</button>
+                    <button class="btn btn-accent" onclick="socket.emit('action', 'INSTALL')">📦 npm install</button>
+                    <button class="btn btn-stop" onclick="socket.emit('action', 'STOP')">■ Force Stop</button>
+                </div>
+            </div>
+            <div class="terminal-container">
+                <div class="terminal-box" id="terminal-log"></div>
+                <div class="terminal-input-bar">
+                    <span class="terminal-prompt-symbol" id="terminal-prompt">$</span>
+                    <input type="text" id="terminal-input" class="terminal-text-input" placeholder="Ketik perintah di sini..." onkeydown="handleTerminalKey(event)">
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB EXTRA: SERVER & LAPTOP MONITOR (NEW REALTIME TAB) -->
+        <div id="sec-monitor" class="page-section">
+            <div class="header-panel">
+                <div>
+                    <h2>Server Performance Monitor</h2>
+                    <p style="color:var(--text-muted)">Status Pemantauan: <span style="color:var(--vs-green); font-weight:bold;">● LIVE</span></p>
+                </div>
+                <div class="controls">
+                    <button class="btn btn-sec" onclick="resetChartData()">Clear Logs</button>
+                </div>
+            </div>
+
+            <!-- Graphic Plotting Dashboard -->
+            <div style="display:grid; grid-template-columns: 1fr; gap:20px; margin-bottom:24px; width:100%;">
+                <div class="gh-box" style="padding:18px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                        <span style="font-weight:600; font-size:0.95rem;">Live Performance</span>
+                        <div style="display:flex; gap:16px; font-size:0.8rem;">
+                            <span style="display:flex; align-items:center; gap:6px;"><span style="width:10px; height:10px; background-color:var(--accent-color); border-radius:50%; display:inline-block; box-shadow:0 0 8px var(--accent-color)"></span> CPU</span>
+                            <span style="display:flex; align-items:center; gap:6px;"><span style="width:10px; height:10px; background-color:var(--vs-orange); border-radius:50%; display:inline-block; box-shadow:0 0 8px var(--vs-orange)"></span> RAM</span>
+                        </div>
+                    </div>
+                    <div style="width:100%; height:200px; position:relative;">
+                        <canvas id="live-performance-canvas" style="width:100%; height:100%; background:rgba(0,0,0,0.25); border-radius:6px; border:1px solid var(--border-color);"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed System Specs Cards (Grid 4 Kolom) -->
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:18px;">
+                <div class="gh-box">
+                    <div class="gh-box-header"><h3>⚙️ Processor</h3></div>
+                    <div class="gh-box-body" style="gap:12px; padding:18px;">
+                        <div style="display:flex; justify-content:space-between; font-size:0.85rem;"><span style="color:var(--text-muted)">CPU Model</span><span id="mon-cpu-model" style="font-weight:600; text-align:right; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Loading...</span></div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.85rem;"><span style="color:var(--text-muted)">Cores / Threads</span><span id="mon-cpu-cores" style="font-weight:600;">0 Cores</span></div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.85rem;"><span style="color:var(--text-muted)">Current Speed</span><span id="mon-cpu-speed" style="font-weight:600;">0 MHz</span></div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.85rem;"><span style="color:var(--text-muted)">Total CPU Workload</span><span id="mon-cpu-load" style="font-weight:600; color:var(--accent-hover);">0.0%</span></div>
+                        <div style="background-color:rgba(0,0,0,0.3); border-radius:10px; height:6px; overflow:hidden; width:100%;">
+                            <div id="mon-cpu-bar" style="background-color:var(--accent-color); height:100%; width:0%; transition:width 0.5s ease;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="gh-box">
+                    <div class="gh-box-header"><h3>💾 Memory</h3></div>
+                    <div class="gh-box-body" style="gap:12px; padding:18px;">
+                        <div style="display:flex; justify-content:space-between; font-size:0.85rem;"><span style="color:var(--text-muted)">Total RAM Available</span><span id="mon-ram-total" style="font-weight:600;">0.00 GB</span></div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.85rem;"><span style="color:var(--text-muted)">Used Memory</span><span id="mon-ram-used" style="font-weight:600;">0.00 GB</span></div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.85rem;"><span style="color:var(--text-muted)">Percentage Used</span><span id="mon-ram-percent" style="font-weight:600; color:var(--vs-orange);">0.0%</span></div>
+                        <div style="background-color:rgba(0,0,0,0.3); border-radius:10px; height:6px; overflow:hidden; width:100%;">
+                            <div id="mon-ram-bar" style="background-color:var(--vs-orange); height:100%; width:0%; transition:width 0.5s ease;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="gh-box">
+                    <div class="gh-box-header"><h3>⚡ Power & Thermal</h3></div>
+                    <div class="gh-box-body" style="gap:12px; padding:18px;">
+                        <div style="display:flex; justify-content:space-between; font-size:0.85rem;"><span style="color:var(--text-muted)">Thermal Level</span><span id="mon-sys-temp" style="font-weight:600; color:var(--vs-red);">0.0 °C</span></div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.85rem;"><span style="color:var(--text-muted)">Power Consumption</span><span id="mon-sys-watt" style="font-weight:600; color:var(--vs-yellow);">0.0 W</span></div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.85rem;"><span style="color:var(--text-muted)">Battery Capacity</span><span id="mon-bat-level" style="font-weight:600;">100%</span></div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.85rem;"><span style="color:var(--text-muted)">Power Status</span><span id="mon-bat-status" style="font-weight:600;">AC Connected</span></div>
+                        <div style="background-color:rgba(0,0,0,0.3); border-radius:10px; height:6px; overflow:hidden; width:100%;">
+                            <div id="mon-bat-bar" style="background-color:var(--vs-green); height:100%; width:100%; transition:width 0.5s ease;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KARTU METRIK BARU: NETWORK & SYSTEM TELEMETRY -->
+                <div class="gh-box">
+                    <div class="gh-box-header"><h3>🌐 Network & System</h3></div>
+                    <div class="gh-box-body" style="gap:12px; padding:18px;">
+                        <div style="display:flex; justify-content:space-between; font-size:0.85rem;"><span style="color:var(--text-muted)">Uptime Server</span><span id="mon-sys-uptime" style="font-weight:600; color:var(--vs-green);">0h 0m</span></div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.85rem;"><span style="color:var(--text-muted)">Download Speed</span><span id="mon-net-download" style="font-weight:600; color:var(--accent-hover);">0.0 KB/s</span></div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.85rem;"><span style="color:var(--text-muted)">Upload Speed</span><span id="mon-net-upload" style="font-weight:600; color:var(--vs-orange);">0.0 KB/s</span></div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.85rem;"><span style="color:var(--text-muted)">OS Environment</span><span id="mon-sys-os" style="font-weight:600; text-align:right; max-width:110px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Detecting...</span></div>
+                        <div style="background-color:rgba(0,0,0,0.3); border-radius:10px; height:6px; overflow:hidden; width:100%;">
+                            <div style="background-color:var(--vs-green); height:100%; width:100%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: FILE MANAGER -->
+        <div id="sec-files" class="page-section">
+            <div class="header-panel">
+                <div>
+                    <h2>File Manager</h2>
+                    <p id="current-path-display">Path: /</p>
+                </div>
+                <div class="controls">
+                    <div class="loader-inline" id="fm-loader"></div>
+                    <button class="btn btn-sec" onclick="loadFiles(currentPath)">Refresh</button>
+                </div>
+            </div>
+            <div class="fm-tools">
+                <button class="btn btn-sec" onclick="goUp()">Back</button>
+                <input type="file" id="file-uploader" style="display:none" onchange="handleUpload(this)">
+                <button class="btn btn-start" id="upload-btn" onclick="document.getElementById('file-uploader').click()">Upload File</button>
+            </div>
+            
+            <div class="fm-table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Size</th>
+                            <th style="text-align: right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="file-table-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TAB 3: SETTINGS -->
+        <div id="sec-settings" class="page-section">
+            <div class="header-panel">
+                <div>
+                    <h2>Personal & Panel Settings</h2>
+                    <p style="color:var(--text-muted); font-size:0.85rem">Kelola profil kamu, ubah perintah eksekusi, sesuaikan rona warna, tingkat kebeningan frosted glass, dan wallpaper latar belakang.</p>
+                </div>
+            </div>
+            
+            <div class="settings-container">
+                <div class="settings-nav">
+                    <button class="settings-nav-btn active" id="nav-btn-profile" onclick="switchSettingsSubTab('profile')">👤 Public Profile</button>
+                    <button class="settings-nav-btn" id="nav-btn-system" onclick="switchSettingsSubTab('system')">🛠️ Command Settings</button>
+                    <button class="settings-nav-btn" id="nav-btn-theme" onclick="switchSettingsSubTab('theme')">🎨 Appearance & Wallpaper</button>
+                </div>
+
+                <div class="settings-content-wrapper">
+                    <!-- SUB-TAB: PROFILE -->
+                    <div class="settings-section-card active" id="set-profile">
+                        <div class="gh-box">
+                            <div class="gh-box-header">
+                                <h3>Public Profile</h3>
+                                <p>Bagaimana kamu muncul di panel pengembang ini.</p>
+                            </div>
+                            <div class="gh-box-body">
+                                <div class="profile-settings-layout">
+                                    <div style="display:flex; flex-direction:column; gap:16px;">
+                                        <div class="form-group">
+                                            <label for="cfg-profile-name">Display Name</label>
+                                            <input type="text" id="cfg-profile-name" placeholder="Nama kamu yang tampil di sidebar">
+                                            <p class="help-text">Nama ini akan disinkronisasikan ke semua komponen navigasi panel kamu.</p>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="cfg-profile-bio">Deskripsi</label>
+                                            <textarea id="cfg-profile-bio" rows="3" placeholder="Bagikan deskripsi singkat peran kamu..."></textarea>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="avatar-uploader-column">
+                                        <label style="font-size: 0.85rem; font-weight: 500;">Profile Picture</label>
+                                        <div class="avatar-preview-wrapper" onclick="document.getElementById('avatar-file-input').click()">
+                                            <img id="cfg-avatar-preview" src="https://placehold.co/140x140/21262d/8b949e?text=PRO" alt="Preview Avatar" class="avatar-preview-img">
+                                            <div class="avatar-edit-overlay">Change Image</div>
+                                        </div>
+                                        <input type="file" id="avatar-file-input" style="display:none" accept="image/*" onchange="previewAndSaveAvatar(this)">
+                                        <p class="help-text" style="text-align:center">Format JPG, PNG, atau GIF.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SUB-TAB: SYSTEM -->
+                    <div class="settings-section-card" id="set-system">
+                        <div class="gh-box">
+                            <div class="gh-box-header">
+                                <h3>Command & Execution Settings</h3>
+                                <p>Konfigurasi core runtime dan penanganan lifecycle bot whatsapp.</p>
+                            </div>
+                            <div class="gh-box-body">
+                                <div class="form-group">
+                                    <label for="cfg-command">Main Start Command</label>
+                                    <input type="text" id="cfg-command" placeholder="e.g. npm start atau node index.js">
+                                    <p class="help-text">Perintah sistem yang akan dipicu ketika tombol "Run Start Command" ditekan di Console.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SUB-TAB: THEME & WALLPAPER -->
+                    <div class="settings-section-card" id="set-theme">
+                        <div class="gh-box">
+                            <div class="gh-box-header">
+                                <h3>Appearance & Wallpaper Settings</h3>
+                                <p>Sesuaikan tampilan visual rona warna, kebeningan frosted glass, dan gambar latar belakang.</p>
+                            </div>
+                            <div class="gh-box-body">
+                                <div class="form-group">
+                                    <label>Pilih Tema Warna Gelap:</label>
+                                    <div class="color-options">
+                                        <div class="color-dot-container" id="theme-opt-blue" onclick="selectTheme('blue')">
+                                            <div class="color-dot" style="background-color:#0a84ff"></div>
+                                            <span class="color-label">Midnight Blue</span>
+                                        </div>
+                                        <div class="color-dot-container" id="theme-opt-red" onclick="selectTheme('red')">
+                                            <div class="color-dot" style="background-color:#ff453a"></div>
+                                            <span class="color-label">Crimson Void</span>
+                                        </div>
+                                        <div class="color-dot-container" id="theme-opt-yellow" onclick="selectTheme('yellow')">
+                                            <div class="color-dot" style="background-color:#ffd60a"></div>
+                                            <span class="color-label">Amber Gold</span>
+                                        </div>
+                                        <div class="color-dot-container" id="theme-opt-green" onclick="selectTheme('green')">
+                                            <div class="color-dot" style="background-color:#30d158"></div>
+                                            <span class="color-label">Forest Green</span>
+                                        </div>
+                                        <div class="color-dot-container" id="theme-opt-magenta" onclick="selectTheme('magenta')">
+                                            <div class="color-dot" style="background-color:#bf5af2"></div>
+                                            <span class="color-label">Cyber Purple</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group" style="margin-top: 10px;">
+                                    <label for="cfg-panel-opacity">Panel Transparency: <span id="val-panel-opacity">85%</span></label>
+                                    <input type="range" id="cfg-panel-opacity" min="0.05" max="1.0" step="0.05" value="0.85" oninput="updatePanelOpacityPreview(this.value)">
+                                    <p class="help-text">Sesuaikan tingkat kebeningan latar belakang panel (frosted glassmorphism).</p>
+                                </div>
+
+                                <div class="form-group" style="margin-top: 10px;">
+                                    <label for="cfg-panel-blur">Backdrop Blur Strength: <span id="val-panel-blur">12px</span></label>
+                                    <input type="range" id="cfg-panel-blur" min="0" max="30" step="1" value="12" oninput="updatePanelBlurPreview(this.value)">
+                                    <p class="help-text">Sesuaikan kekuatan buram filter kaca di belakang panel.</p>
+                                </div>
+
+                                <div class="form-group" style="margin-top: 10px;">
+                                    <label for="cfg-bg-image-url">Custom Background Image URL</label>
+                                    <div style="display:flex; gap:8px;">
+                                        <input type="text" id="cfg-bg-image-url" placeholder="e.g. https://images.unsplash.com/photo-...">
+                                        <button class="btn btn-stop" onclick="clearBackgroundImage()">Reset</button>
+                                    </div>
+                                    <p class="help-text">Gunakan URL gambar online, atau unggah file gambar kustom kamu di bawah.</p>
+                                </div>
+
+                                <div class="form-group" style="margin-top: 5px;">
+                                    <label>Upload Custom Wallpaper File</label>
+                                    <button class="btn btn-sec" onclick="document.getElementById('bg-file-input').click()">Select Wallpaper Image</button>
+                                    <input type="file" id="bg-file-input" style="display:none" accept="image/*" onchange="uploadBackgroundImageFile(this)">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Button Simpan -->
+                    <button class="btn btn-start" style="align-self: flex-start; padding: 10px 20px; font-weight: 600;" onclick="saveConfig()">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CODE EDITOR MODAL -->
+    <div id="editor-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="editor-title">Editing File</h3>
+                <div>
+                    <button class="btn btn-start" onclick="saveFile()">Save File</button>
+                    <button class="btn btn-stop" onclick="closeEditor()">Close</button>
+                </div>
+            </div>
+            <textarea class="editor-textarea" id="editor-raw"></textarea>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATIONS WRAPPER -->
+    <div id="toast-wrapper" class="toast-container"></div>
+
+    <!-- PREMIUM iOS STYLE POPUP MODAL SYSTEM (REPLACES WINDOW ALERTS & CONFIRMS) -->
+    <div class="ios-modal-overlay" id="ios-alert-overlay">
+        <div class="ios-modal">
+            <div class="ios-modal-content">
+                <div class="ios-modal-title" id="ios-title">Alert Title</div>
+                <div class="ios-modal-body" id="ios-body">Alert description content.</div>
+                <div id="ios-input-container" style="display: none;">
+                    <input type="text" class="ios-modal-input" id="ios-input-field" placeholder="">
+                </div>
+            </div>
+            <div class="ios-modal-buttons" id="ios-buttons-container"></div>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        let currentPath = "";
+        let editingFilePath = "";
+        let selectedThemeColor = "blue";
+        
+        let userProfileData = {
+            name: "You",
+            bio: "Developer Pemula",
+            avatar: "https://placehold.co/80x80/21262d/8b949e?text=PRO",
+            panelOpacity: 0.85,
+            panelBlur: 12,
+            bgImage: ""
+        };
+
+        // Realtime Performance History Arrays
+        let chartDataPoints = 40;
+        let cpuHistory = Array(chartDataPoints).fill(0);
+        let ramHistory = Array(chartDataPoints).fill(0);
+
+        function resetChartData() {
+            cpuHistory = Array(chartDataPoints).fill(0);
+            ramHistory = Array(chartDataPoints).fill(0);
+            drawPerformanceChart();
+            showToast("Log riwayat grafik berhasil dibersihkan.", "success");
+        }
+
+        // Helper formatter uptime
+        function formatUptime(seconds) {
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            return `${h}h ${m}m`;
+        }
+
+        // Lightweight neon canvas rendering engine
+        function drawPerformanceChart() {
+            const canvas = document.getElementById('live-performance-canvas');
+            if (!canvas) return;
+            
+            // Adjust canvas to match display size
+            const rect = canvas.parentNode.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width;
+            const h = canvas.height;
+
+            ctx.clearRect(0, 0, w, h);
+
+            // Draw grid lines
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.04)";
+            ctx.lineWidth = 1;
+            for (let i = 1; i < 4; i++) {
+                let y = (h / 4) * i;
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(w, y);
+                ctx.stroke();
+            }
+
+            const pointsCount = cpuHistory.length;
+            const xStep = w / (pointsCount - 1);
+
+            // Helper function to plot lines with glowing stroke and gradients
+            function plotLine(data, color, shadowColor, gradientStart) {
+                if (data.length === 0) return;
+
+                ctx.save();
+                
+                // Draw fill gradient
+                const gradient = ctx.createLinearGradient(0, 0, 0, h);
+                gradient.addColorStop(0, gradientStart);
+                gradient.addColorStop(1, "rgba(0, 0, 0, 0)");
+
+                ctx.beginPath();
+                ctx.moveTo(0, h);
+                for (let i = 0; i < data.length; i++) {
+                    let val = parseFloat(data[i]) || 0;
+                    if(val > 100) val = 100;
+                    let x = i * xStep;
+                    let y = h - (val / 100) * (h - 20) - 10;
+                    ctx.lineTo(x, y);
+                }
+                ctx.lineTo(w, h);
+                ctx.closePath();
+                ctx.fillStyle = gradient;
+                ctx.fill();
+
+                // Draw glowing stroke
+                ctx.shadowColor = shadowColor;
+                ctx.shadowBlur = 8;
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2.5;
+                ctx.lineCap = "round";
+                ctx.lineJoin = "round";
+
+                ctx.beginPath();
+                for (let i = 0; i < data.length; i++) {
+                    let val = parseFloat(data[i]) || 0;
+                    if(val > 100) val = 100;
+                    let x = i * xStep;
+                    let y = h - (val / 100) * (h - 20) - 10;
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            // Draw CPU Line (Theme Blue/Accent)
+            plotLine(cpuHistory, "rgba(10, 132, 255, 1)", "rgba(10, 132, 255, 0.6)", "rgba(10, 132, 255, 0.15)");
+            
+            // Draw RAM Line (Orange)
+            plotLine(ramHistory, "rgba(255, 159, 10, 1)", "rgba(255, 159, 10, 0.6)", "rgba(255, 159, 10, 0.15)");
+        }
+
+        // Monitor resize events to scale canvas
+        window.addEventListener('resize', () => {
+            if(document.getElementById('sec-monitor').classList.contains('active')) {
+                drawPerformanceChart();
+            }
+        });
+
+        // iOS Dialog Handler 
+        function showIosAlert(title, message, callback) {
+            const overlay = document.getElementById('ios-alert-overlay');
+            document.getElementById('ios-title').innerText = title;
+            document.getElementById('ios-body').innerText = message;
+            document.getElementById('ios-input-container').style.display = 'none';
+
+            const btnContainer = document.getElementById('ios-buttons-container');
+            btnContainer.className = "ios-modal-buttons";
+            btnContainer.innerHTML = `
+                <button class="ios-btn bold" id="ios-btn-ok">OK</button>
+            `;
+
+            overlay.classList.add('show');
+
+            document.getElementById('ios-btn-ok').onclick = () => {
+                overlay.classList.remove('show');
+                if (callback) callback();
+            };
+        }
+
+        function showIosConfirm(title, message, yesText = "Yes", noText = "Cancel", isDanger = false, callback) {
+            const overlay = document.getElementById('ios-alert-overlay');
+            document.getElementById('ios-title').innerText = title;
+            document.getElementById('ios-body').innerText = message;
+            document.getElementById('ios-input-container').style.display = 'none';
+
+            const btnContainer = document.getElementById('ios-buttons-container');
+            btnContainer.className = "ios-modal-buttons";
+            btnContainer.innerHTML = `
+                <button class="ios-btn cancel" id="ios-btn-cancel">${noText}</button>
+                <button class="ios-btn bold ${isDanger ? 'danger' : ''}" id="ios-btn-confirm">${yesText}</button>
+            `;
+
+            overlay.classList.add('show');
+
+            document.getElementById('ios-btn-cancel').onclick = () => {
+                overlay.classList.remove('show');
+                callback(false);
+            };
+
+            document.getElementById('ios-btn-confirm').onclick = () => {
+                overlay.classList.remove('show');
+                callback(true);
+            };
+        }
+
+        function showIosPrompt(title, message, defaultValue = "", placeholder = "", callback) {
+            const overlay = document.getElementById('ios-alert-overlay');
+            document.getElementById('ios-title').innerText = title;
+            document.getElementById('ios-body').innerText = message;
+            
+            const inputContainer = document.getElementById('ios-input-container');
+            const inputField = document.getElementById('ios-input-field');
+            inputContainer.style.display = 'block';
+            inputField.value = defaultValue;
+            inputField.placeholder = placeholder;
+
+            const btnContainer = document.getElementById('ios-buttons-container');
+            btnContainer.className = "ios-modal-buttons";
+            btnContainer.innerHTML = `
+                <button class="ios-btn cancel" id="ios-btn-cancel">Cancel</button>
+                <button class="ios-btn bold" id="ios-btn-submit">Submit</button>
+            `;
+
+            overlay.classList.add('show');
+            inputField.focus();
+
+            document.getElementById('ios-btn-cancel').onclick = () => {
+                overlay.classList.remove('show');
+                callback(null);
+            };
+
+            document.getElementById('ios-btn-submit').onclick = () => {
+                overlay.classList.remove('show');
+                callback(inputField.value);
+            };
+        }
+
+        // Custom Toast Notification System
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-wrapper');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <span>${type === 'success' ? '✅' : '❌'}</span>
+                <span>${message}</span>
+            `;
+            container.appendChild(toast);
+            
+            setTimeout(() => toast.classList.add('show'), 50);
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('main-sidebar');
+            sidebar.classList.toggle('collapsed');
+            localStorage.setItem('yus_sidebar_collapsed', sidebar.classList.contains('collapsed'));
+        }
+
+        function initSidebarState() {
+            const collapsed = localStorage.getItem('yus_sidebar_collapsed') === 'true';
+            const sidebar = document.getElementById('main-sidebar');
+            if (collapsed) {
+                sidebar.classList.add('collapsed');
+            } else {
+                sidebar.classList.remove('collapsed');
+            }
+        }
+
+        function applyFrostedStyles(opacity, blur, bgImage) {
+            const root = document.documentElement;
+            root.style.setProperty('--panel-bg-opacity', opacity);
+            root.style.setProperty('--panel-blur', blur + 'px');
+            
+            if (bgImage) {
+                root.style.setProperty('--bg-custom-image', `url('${bgImage}')`);
+            } else {
+                root.style.setProperty('--bg-custom-image', 'none');
+            }
+        }
+
+        function updatePanelOpacityPreview(val) {
+            document.getElementById('val-panel-opacity').innerText = Math.round(val * 100) + '%';
+            applyFrostedStyles(val, userProfileData.panelBlur, userProfileData.bgImage);
+        }
+
+        function updatePanelBlurPreview(val) {
+            document.getElementById('val-panel-blur').innerText = val + 'px';
+            applyFrostedStyles(userProfileData.panelOpacity, val, userProfileData.bgImage);
+        }
+
+        function clearBackgroundImage() {
+            userProfileData.bgImage = "";
+            document.getElementById('cfg-bg-image-url').value = "";
+            applyFrostedStyles(userProfileData.panelOpacity, userProfileData.panelBlur, "");
+            showToast('Latar belakang dibersihkan, wallpaper disetel ulang.', 'success');
+        }
+
+        function uploadBackgroundImageFile(input) {
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        
+                        // Kompres gambar latar belakang agar ringan
+                        const maxW = 1280;
+                        const maxH = 720;
+                        let w = img.width;
+                        let h = img.height;
+                        
+                        if (w > maxW || h > maxH) {
+                            if (w / h > maxW / maxH) {
+                                h = Math.round(h * maxW / w);
+                                w = maxW;
+                            } else {
+                                w = Math.round(w * maxH / h);
+                                h = maxH;
+                            }
+                        }
+                        
+                        canvas.width = w;
+                        canvas.height = h;
+                        ctx.drawImage(img, 0, 0, w, h);
+                        
+                        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.80);
+                        userProfileData.bgImage = compressedDataUrl;
+                        document.getElementById('cfg-bg-image-url').value = "Uploaded Wallpaper File";
+                        applyFrostedStyles(userProfileData.panelOpacity, userProfileData.panelBlur, compressedDataUrl);
+                        showToast('Wallpaper kustom berhasil dipasang!', 'success');
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function updateProfileUI() {
+            document.getElementById('sidebar-name').innerText = userProfileData.name;
+            document.getElementById('sidebar-avatar').src = userProfileData.avatar || "https://placehold.co/80x80/21262d/8b949e?text=OSS";
+            document.getElementById('cfg-profile-name').value = userProfileData.name;
+            document.getElementById('cfg-profile-bio').value = userProfileData.bio || "";
+            document.getElementById('cfg-avatar-preview').src = userProfileData.avatar || "https://placehold.co/140x140/21262d/8b949e?text=OSS";
+            
+            // Sync form sliders & values
+            document.getElementById('cfg-panel-opacity').value = userProfileData.panelOpacity;
+            document.getElementById('val-panel-opacity').innerText = Math.round(userProfileData.panelOpacity * 100) + '%';
+            
+            document.getElementById('cfg-panel-blur').value = userProfileData.panelBlur;
+            document.getElementById('val-panel-blur').innerText = userProfileData.panelBlur + 'px';
+            
+            document.getElementById('cfg-bg-image-url').value = userProfileData.bgImage.startsWith('data:') ? 'Uploaded Wallpaper File' : userProfileData.bgImage;
+            
+            applyFrostedStyles(userProfileData.panelOpacity, userProfileData.panelBlur, userProfileData.bgImage);
+        }
+
+        function previewAndSaveAvatar(input) {
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        const targetSize = 120; // Kompresi profil aman
+
+                        canvas.width = targetSize;
+                        canvas.height = targetSize;
+                        
+                        const minDim = Math.min(img.width, img.height);
+                        const sx = (img.width - minDim) / 2;
+                        const sy = (img.height - minDim) / 2;
+                        
+                        ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, targetSize, targetSize);
+                        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+                        
+                        userProfileData.avatar = compressedDataUrl;
+                        document.getElementById('cfg-avatar-preview').src = compressedDataUrl;
+                        showToast('Foto profil dikompresi. Simpan konfigurasi untuk memperbarui.', 'success');
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
+            document.getElementById(`sec-${tab}`).classList.add('active');
+            document.getElementById(`m-${tab}`).classList.add('active');
+            if(tab === 'files') loadFiles(currentPath);
+            if(tab === 'settings') loadConfig();
+            if(tab === 'monitor') {
+                setTimeout(drawPerformanceChart, 100);
+            }
+        }
+
+        function switchSettingsSubTab(subTab) {
+            document.querySelectorAll('.settings-nav-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.settings-section-card').forEach(card => card.classList.remove('active'));
+            
+            document.getElementById(`nav-btn-${subTab}`).classList.add('active');
+            document.getElementById(`set-${subTab}`).classList.add('active');
+        }
+
+        async function loadConfig() {
+            try {
+                const res = await fetch('/api/config');
+                const data = await res.json();
+                document.getElementById('cfg-command').value = data.startCommand;
+                
+                selectedThemeColor = data.themeColor || 'blue';
+                document.body.className = `theme-${selectedThemeColor}`;
+                updateThemeDotUI(selectedThemeColor);
+
+                // Sinkronisasi data profil
+                userProfileData.name = data.profileName;
+                userProfileData.bio = data.profileBio;
+                userProfileData.avatar = data.profileAvatar || "";
+                userProfileData.panelOpacity = data.panelOpacity !== undefined ? parseFloat(data.panelOpacity) : 0.85;
+                userProfileData.panelBlur = data.panelBlur !== undefined ? parseInt(data.panelBlur) : 12;
+                userProfileData.bgImage = data.bgImage || "";
+                
+                updateProfileUI();
+            } catch (err) {
+                console.error("Gagal terhubung ke API server.");
+                document.body.className = `theme-${selectedThemeColor}`;
+                updateThemeDotUI(selectedThemeColor);
+            }
+        }
+
+        function updateThemeDotUI(color) {
+            document.querySelectorAll('.color-dot-container').forEach(c => c.classList.remove('active'));
+            const targetDot = document.getElementById(`theme-opt-${color}`);
+            if (targetDot) targetDot.classList.add('active');
+        }
+
+        function selectTheme(color) {
+            selectedThemeColor = color;
+            document.body.className = `theme-${color}`;
+            updateThemeDotUI(color);
+            showToast(`Tema berubah ke: ${color.toUpperCase()}`, 'success');
+        }
+
+        async function saveConfig() {
+            userProfileData.name = document.getElementById('cfg-profile-name').value;
+            userProfileData.bio = document.getElementById('cfg-profile-bio').value;
+            userProfileData.panelOpacity = parseFloat(document.getElementById('cfg-panel-opacity').value);
+            userProfileData.panelBlur = parseInt(document.getElementById('cfg-panel-blur').value);
+            
+            const rawBgUrlInput = document.getElementById('cfg-bg-image-url').value;
+            if (rawBgUrlInput !== "Uploaded Wallpaper File") {
+                userProfileData.bgImage = rawBgUrlInput;
+            }
+
+            const cmd = document.getElementById('cfg-command').value;
+            
+            try {
+                const res = await fetch('/api/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        startCommand: cmd, 
+                        themeColor: selectedThemeColor,
+                        profileName: userProfileData.name,
+                        profileBio: userProfileData.bio,
+                        profileAvatar: userProfileData.avatar,
+                        panelOpacity: userProfileData.panelOpacity,
+                        panelBlur: userProfileData.panelBlur,
+                        bgImage: userProfileData.bgImage
+                    })
+                });
+                
+                if (res.ok) {
+                    showToast('Konfigurasi berhasil disimpan ke server!', 'success');
+                    loadConfig();
+                } else {
+                    showToast('Gagal menyimpan konfigurasi ke server.', 'error');
+                }
+            } catch (err) {
+                showToast('Gagal mengirim konfigurasi ke server.', 'error');
+            }
+        }
+
+        // === HIGH PERFORMANCE ANSI PARSER & TERMINAL MANAGER ===
+        let clientLogBuffer = [];
+        const MAX_CLIENT_LOG_LINES = 500; // Pembatasan maksimal baris agar browser ga nge-lag / freeze!
+
+        function ansiToHtml(text) {
+            // Escape HTML karakter agar tidak merusak UI jika bot-wa meludahkan teks < atau >
+            let safeText = text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;");
+
+            const ansiCodes = {
+                '0': '</span>', // Reset
+                '1': '<span style="font-weight: bold;">', // Bold
+                '30': '<span style="color: #1c1c1e;">', // Black
+                '31': '<span style="color: var(--vs-red, #ff453a); font-weight: 600;">', // Red
+                '32': '<span style="color: var(--vs-green, #30d158); font-weight: 500;">', // Green
+                '33': '<span style="color: var(--vs-yellow, #ffd60a); font-weight: 500;">', // Yellow
+                '34': '<span style="color: var(--vs-blue, #0a84ff); font-weight: 500;">', // Blue
+                '35': '<span style="color: #bf5af2;">', // Magenta
+                '36': '<span style="color: #5ee07f;">', // Cyan
+                '37': '<span style="color: #ffffff;">', // White
+                '90': '<span style="color: #767676;">', // Gray
+            };
+
+            // Menggantikan kode-kode escape warna terminal \x1b[32m dsb ke HTML tags
+            let html = safeText.replace(/\x1b\[([0-9;]+)m/g, (match, codeGroup) => {
+                let res = '';
+                let codes = codeGroup.split(';');
+                codes.forEach(code => {
+                    if (ansiCodes[code]) {
+                        res += ansiCodes[code];
+                    } else if (code === '0' || code === '39') {
+                        res += '</span>';
+                    }
+                });
+                return res;
+            });
+
+            return html;
+        }
+
+        // Penanganan Real-Time Logs yang super optimal
+        socket.on('log', data => {
+            const logBox = document.getElementById('terminal-log');
+            if (!logBox) return;
+
+            // Push potongan log terbaru ke buffer lokal
+            clientLogBuffer.push(data);
+            
+            // Satukan dan pisahkan per baris baru (\n)
+            let fullText = clientLogBuffer.join('');
+            let lines = fullText.split('\n');
+            
+            // Jika melebihi batas, lakukan pemotongan baris tertua dari memori
+            if (lines.length > MAX_CLIENT_LOG_LINES) {
+                lines = lines.slice(lines.length - MAX_CLIENT_LOG_LINES);
+                clientLogBuffer = [lines.join('\n')];
+            }
+
+            // Render ulang ke HTML dengan warna-warna keren
+            logBox.innerHTML = ansiToHtml(lines.join('\n'));
+            
+            // Auto-scroll ke paling dasar terminal
+            logBox.scrollTop = logBox.scrollHeight;
+        });
+
+        socket.on('live-metrics', stats => {
+            // Push ke riwayat chart
+            cpuHistory.push(parseFloat(stats.cpu));
+            cpuHistory.shift();
+            
+            ramHistory.push(parseFloat(stats.ram.percent));
+            ramHistory.shift();
+
+            // Memperbarui UI Monitor tab
+            const monitorTab = document.getElementById('sec-monitor');
+            if (monitorTab && monitorTab.classList.contains('active')) {
+                // Update elemen teks specs
+                document.getElementById('mon-cpu-model').innerText = stats.cpuModel;
+                document.getElementById('mon-cpu-cores').innerText = `${stats.cpuCores} Cores / Threads`;
+                document.getElementById('mon-cpu-speed').innerText = `${stats.cpuSpeed} MHz`;
+                document.getElementById('mon-cpu-load').innerText = `${stats.cpu}%`;
+                
+                document.getElementById('mon-ram-total').innerText = stats.ram.total;
+                document.getElementById('mon-ram-used').innerText = stats.ram.used;
+                document.getElementById('mon-ram-percent').innerText = `${stats.ram.percent}%`;
+                
+                document.getElementById('mon-sys-temp').innerText = `${stats.temp} °C`;
+                document.getElementById('mon-sys-watt').innerText = `${stats.watt} W`;
+                document.getElementById('mon-bat-level').innerText = `${stats.battery.level}%`;
+                document.getElementById('mon-bat-status').innerText = stats.battery.status;
+
+                // Update metrik jaringan baru & uptime
+                document.getElementById('mon-sys-uptime').innerText = formatUptime(stats.uptime);
+                document.getElementById('mon-net-download').innerText = stats.network.download;
+                document.getElementById('mon-net-upload').innerText = stats.network.upload;
+                document.getElementById('mon-sys-os').innerText = stats.os;
+
+                // Update visual bars
+                document.getElementById('mon-cpu-bar').style.width = `${stats.cpu}%`;
+                document.getElementById('mon-ram-bar').style.width = `${stats.ram.percent}%`;
+                document.getElementById('mon-bat-bar').style.width = `${stats.battery.level}%`;
+
+                // Re-draw performance chart
+                drawPerformanceChart();
+            }
+        });
+
+        // Socket logs status
+        socket.on('status', s => { 
+            document.getElementById('status-text').innerText = s; 
+            const prompt = document.getElementById('terminal-prompt');
+            if (prompt) {
+                prompt.innerText = s === 'RUNNING' ? 'running >' : '$';
+                prompt.style.color = s === 'RUNNING' ? 'var(--vs-orange)' : 'var(--vs-green)';
+            }
+        });
+
+        let cmdHistory = [];
+        let cmdHistoryIndex = -1;
+
+        function handleTerminalKey(event) {
+            const input = document.getElementById('terminal-input');
+            if (!input) return;
+
+            if (event.key === 'Enter') {
+                const val = input.value.trim();
+                if (!val) return;
+
+                socket.emit('command', val);
+
+                cmdHistory.push(val);
+                cmdHistoryIndex = cmdHistory.length;
+                input.value = "";
+            } else if (event.key === 'ArrowUp') {
+                if (cmdHistory.length > 0 && cmdHistoryIndex > 0) {
+                    cmdHistoryIndex--;
+                    input.value = cmdHistory[cmdHistoryIndex];
+                    setTimeout(() => input.setSelectionRange(input.value.length, input.value.length), 0);
+                }
+            } else if (event.key === 'ArrowDown') {
+                if (cmdHistoryIndex < cmdHistory.length - 1) {
+                    cmdHistoryIndex++;
+                    input.value = cmdHistory[cmdHistoryIndex];
+                } else {
+                    cmdHistoryIndex = cmdHistory.length;
+                    input.value = "";
+                }
+            }
+        }
+
+        async function loadFiles(path = "") {
+            const loader = document.getElementById('fm-loader');
+            loader.style.display = 'inline-block';
+            try {
+                const res = await fetch(`/api/files?path=${encodeURIComponent(path)}`);
+                if (!res.ok) {
+                    const errorMsg = await res.json().catch(() => ({}));
+                    throw new Error(errorMsg.error || "Gagal membaca direktori.");
+                }
+                const data = await res.json();
+                
+                currentPath = data.currentPath;
+                document.getElementById('current-path-display').innerText = `Path: /${currentPath}`;
+                
+                const tbody = document.getElementById('file-table-body');
+                tbody.innerHTML = "";
+                
+                if (!data.files || data.files.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:var(--text-muted); padding: 30px;">📁/ Direktori kosong. Unggah file baru menggunakan tombol di atas.</td></tr>`;
+                    return;
+                }
+
+                data.files.forEach(file => {
+                    const tr = document.createElement('tr');
+                    const filePath = currentPath ? `${currentPath}/${file.name}` : file.name;
+                    const isZip = file.name.endsWith('.zip');
+                    
+                    tr.innerHTML = `
+                        <td style="color:${file.isDirectory ? 'var(--vs-orange)' : 'var(--text-main)'}; cursor:${file.isDirectory ? 'pointer' : 'default'}; font-weight:${file.isDirectory ? '600' : '400'}" 
+                            onclick="${file.isDirectory ? `loadFiles('${filePath}')` : ''}">
+                            ${file.isDirectory ? '📁' : isZip ? '📦' : '📄'} ${file.name}
+                        </td>
+                        <td style="color: var(--text-muted); font-size: 0.85rem;">${file.size}</td>
+                        <td style="text-align: right; white-space: nowrap;">
+                            ${file.isDirectory ? '' : `<span class="action-link" onclick="openEditor('${filePath}')">Edit</span>`}
+                            ${isZip ? `<span class="action-link unzip-link" onclick="unzipConfirm('${filePath}')">Extract</span>` : ''}
+                            <span class="action-link" onclick="window.open('/api/download?path=${encodeURIComponent(filePath)}')">Download</span>
+                            <span class="action-link" onclick="moveFilePrompt('${filePath}')">Move/Rename</span>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch(err) {
+                console.error(err);
+                showToast('Gagal memuat File Manager dari backend.', 'error');
+                
+                const tbody = document.getElementById('file-table-body');
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="3" style="text-align:center; padding: 30px 15px;">
+                            <div style="color:var(--vs-red); font-weight:bold; margin-bottom:8px;">❌ Gagal Terhubung ke File Manager API</div>
+                            <div style="color:var(--text-muted); font-size:0.8rem;">Detail: ${err.message}</div>
+                        </td>
+                    </tr>`;
+            } finally {
+                loader.style.display = 'none';
+            }
+        }
+
+        function goUp() {
+            if (!currentPath) return;
+            const parts = currentPath.split('/');
+            parts.pop(); 
+            loadFiles(parts.join('/'));
+        }
+
+        async function openEditor(path) {
+            editingFilePath = path;
+            try {
+                const res = await fetch(`/api/read?path=${encodeURIComponent(path)}`);
+                const data = await res.json();
+                document.getElementById('editor-title').innerText = `Editing: ${path}`;
+                document.getElementById('editor-raw').value = data.content || '';
+                document.getElementById('editor-modal').style.display = 'block';
+            } catch (err) {
+                showToast('Gagal membaca isi berkas file.', 'error');
+            }
+        }
+        
+        function closeEditor() { 
+            document.getElementById('editor-modal').style.display = 'none'; 
+        }
+        
+        async function saveFile() {
+            try {
+                const res = await fetch(`/api/write?path=${encodeURIComponent(editingFilePath)}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content: document.getElementById('editor-raw').value })
+                });
+                if (res.ok) {
+                    showToast('Berkas file berhasil disimpan!', 'success');
+                    closeEditor();
+                    loadFiles(currentPath);
+                } else {
+                    showToast('Gagal menyimpan berkas file.', 'error');
+                }
+            } catch (err) {
+                showToast('Terjadi kesalahan koneksi saat menyimpan.', 'error');
+            }
+        }
+
+        function moveFilePrompt(oldPath) {
+            showIosPrompt("Move or Rename", `Tentukan nama baru atau path tujuan untuk:\n/${oldPath}`, oldPath, "e.g. folder/file.js", async (newName) => {
+                if(!newName || newName === oldPath) return;
+                
+                try {
+                    const res = await fetch('/api/move', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ oldPath, newPath: newName })
+                    });
+                    if (res.ok) {
+                        showToast('Berhasil memindahkan / mengganti nama berkas.', 'success');
+                        loadFiles(currentPath);
+                    } else {
+                        showToast('Gagal memindahkan berkas.', 'error');
+                    }
+                } catch (err) {
+                    showToast('Gagal mengirim perintah pemindahan ke server.', 'error');
+                }
+            });
+        }
+
+        function unzipConfirm(filePath) {
+            showIosConfirm(
+                "Extract File ZIP", 
+                `Apakah kamu yakin ingin mengekstrak berkas "${filePath}" ke folder saat ini di server?`,
+                "Extract",
+                "Cancel",
+                false,
+                async (confirmed) => {
+                    if (!confirmed) return;
+
+                    const loader = document.getElementById('fm-loader');
+                    loader.style.display = 'inline-block';
+                    showToast('Mengekstrak file zip...', 'success');
+
+                    try {
+                        const res = await fetch('/api/unzip', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ path: filePath })
+                        });
+                        
+                        let data;
+                        const contentType = res.headers.get("content-type");
+                        if (contentType && contentType.includes("application/json")) {
+                            data = await res.json();
+                        } else {
+                            const errorText = await res.text();
+                            data = { error: `Response non-JSON dari server (${res.status}): ${errorText.substring(0, 100)}` };
+                        }
+                        
+                        if (res.ok) {
+                            showIosAlert("Ekstraksi Berhasil", `File ZIP berhasil diekstrak!\n\nLog:\n${(data.output || '').slice(0, 150)}...`, () => {
+                                loadFiles(currentPath);
+                            });
+                        } else {
+                            showIosAlert("Gagal Ekstrak", data.error || "Terjadi kesalahan saat mengekstrak ZIP.");
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        showIosAlert("Kesalahan Jaringan", "Gagal menghubungi backend unzip.");
+                    } finally {
+                        loader.style.display = 'none';
+                    }
+                }
+            );
+        }
+
+        async function handleUpload(input) {
+            if (!input.files.length) return;
+            
+            const file = input.files[0];
+            const targetPath = currentPath ? `${currentPath}/${file.name}` : file.name;
+            const uploadBtn = document.getElementById('upload-btn');
+            const loader = document.getElementById('fm-loader');
+            
+            uploadBtn.innerText = "⏳ Uploading...";
+            uploadBtn.disabled = true;
+            loader.style.display = 'inline-block';
+
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const res = await fetch(`/api/upload?path=${encodeURIComponent(targetPath)}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/octet-stream' },
+                        body: e.target.result
+                    });
+                    
+                    if (res.ok) {
+                        showToast(`File "${file.name}" berhasil diunggah!`, 'success');
+                    } else {
+                        throw new Error("HTTP error " + res.status);
+                    }
+                } catch (err) {
+                    showToast('Gagal mengunggah file ke backend server.', 'error');
+                } finally {
+                    input.value = "";
+                    uploadBtn.innerText = "Upload File";
+                    uploadBtn.disabled = false;
+                    loader.style.display = 'none';
+                    loadFiles(currentPath);
+                }
+            };
+            
+            reader.onerror = function() {
+                showToast('Gagal membaca data biner berkas.', 'error');
+                input.value = "";
+                uploadBtn.disabled = false;
+                loader.style.display = 'none';
+            };
+
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Inisialisasi awal aplikasi
+        initSidebarState();
+        loadConfig();
+    </script>
+</body>
+</html>
