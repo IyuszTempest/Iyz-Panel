@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Terminal</title>
+    <!-- Google Fonts untuk font modern & monospace tangguh -->
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+    
+    <style>
+        :root {
+            --neon-blue: #0a84ff;
+            --neon-magenta: #bf5af2;
+            --neon-green: #30d158;
+            --neon-red: #ff453a;
+            --bg-base: #040209;
+            --glass-bg: rgba(10, 6, 18, 0.7);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-main: #f5f5f7;
+            --text-muted: #8e8e93;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Background Animated Ambient Glows */
+        .ambient-glow-wrapper {
+            position: absolute;
+            inset: 0;
+            z-index: 2;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .ambient-glow {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(191, 90, 242, 0.12) 0%, rgba(0,0,0,0) 70%);
+            top: -10%;
+            left: -10%;
+            filter: blur(80px);
+            animation: float-glow-1 20s infinite alternate ease-in-out;
+        }
+
+        .ambient-glow-2 {
+            position: absolute;
+            width: 700px;
+            height: 700px;
+            background: radial-gradient(circle, rgba(10, 132, 255, 0.1) 0%, rgba(0,0,0,0) 70%);
+            bottom: -15%;
+            right: -10%;
+            filter: blur(90px);
+            animation: float-glow-2 25s infinite alternate-reverse ease-in-out;
+        }
+
+        @keyframes float-glow-1 {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(150px, 80px) scale(1.2); }
+        }
+
+        @keyframes float-glow-2 {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(-120px, -100px) scale(1.15); }
+        }
+
+        /* Interactive Canvas */
+        #cyber-canvas {
+            position: absolute;
+            inset: 0;
+            z-index: 3;
+            pointer-events: none;
+        }
+
+        /* */
+        /* HIGH END FUTURISTIC BOOT OVERLAY */
+        #boot-screen {
+            position: fixed;
+            inset: 0;
+            background-color: #030106;
+            z-index: 999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            font-family: 'Fira Code', monospace;
+            transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), backdrop-filter 0.8s;
+        }
+
+        .boot-layout {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            max-width: 400px;
+            z-index: 10;
+        }
+
+        /* Modern Center Circular Loader */
+        .boot-center-loader {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .radial-loader-wrapper {
+            position: relative;
+            width: 160px;
+            height: 160px;
+            margin-bottom: 25px;
+        }
+
+        .radial-svg {
+            transform: rotate(-90deg);
+            width: 100%;
+            height: 100%;
+        }
+
+        .radial-track {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.03);
+            stroke-width: 4;
+        }
+
+        .radial-progress-bar {
+            fill: none;
+            stroke: url(#loader-gradient);
+            stroke-width: 6;
+            stroke-linecap: round;
+            stroke-dasharray: 440;
+            stroke-dashoffset: 440;
+            transition: stroke-dashoffset 0.05s linear;
+        }
+
+        .radial-inner-ring {
+            position: absolute;
+            inset: 15px;
+            border: 1px dashed rgba(10, 132, 255, 0.2);
+            border-radius: 50%;
+            animation: spin-clockwise 15s linear infinite;
+        }
+
+        .radial-outer-ring {
+            position: absolute;
+            inset: -8px;
+            border: 1px solid rgba(191, 90, 242, 0.15);
+            border-radius: 50%;
+            border-top-color: transparent;
+            border-bottom-color: transparent;
+            animation: spin-counter-clockwise 4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        }
+
+        @keyframes spin-clockwise {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes spin-counter-clockwise {
+            to { transform: rotate(-360deg); }
+        }
+
+        .loader-percentage {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Fira Code', monospace;
+        }
+
+        .percentage-num {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--text-main);
+            text-shadow: 0 0 15px rgba(10, 132, 255, 0.4);
+        }
+
+        .percentage-unit {
+            font-size: 0.8rem;
+            color: var(--neon-blue);
+            font-weight: 500;
+        }
+
+        .loader-status-text {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-top: 5px;
+            animation: blink-status 1.2s infinite alternate;
+        }
+
+        @keyframes blink-status {
+            0% { opacity: 0.4; }
+            100% { opacity: 1; color: var(--neon-blue); }
+        }
+
+        /* */
+        /* MODERN GLASS LOGIN CARD */
+        .login-box {
+            position: relative;
+            z-index: 10;
+            width: 400px;
+            padding: 35px 30px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.7),
+                        inset 0 1px 1px rgba(255, 255, 255, 0.08);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.5s;
+            opacity: 0;
+            transform: translateY(30px) scale(0.95);
+        }
+
+        .login-box.active {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+
+        /* Card Neon Border */
+        .login-box::before {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            border-radius: 20px;
+            padding: 1.5px;
+            background: linear-gradient(135deg, var(--neon-blue), var(--neon-magenta));
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+            opacity: 0.5;
+            transition: opacity 0.3s;
+        }
+
+        .login-box:hover::before {
+            opacity: 0.9;
+        }
+
+        .header-section {
+            margin-bottom: 28px;
+            text-align: center;
+        }
+
+        .terminal-header {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8rem;
+            color: var(--neon-blue);
+            background: rgba(10, 132, 255, 0.1);
+            padding: 4px 12px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-bottom: 12px;
+            border: 1px solid rgba(10, 132, 255, 0.2);
+            letter-spacing: 0.05em;
+        }
+
+        .title {
+            color: var(--text-main);
+            font-size: 1.6rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .subtitle {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-wrapper .material-symbols-outlined {
+            position: absolute;
+            left: 14px;
+            color: var(--text-muted);
+            font-size: 1.25rem;
+            pointer-events: none;
+            transition: color 0.3s;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 13px 16px 13px 44px;
+            background: rgba(0, 0, 0, 0.45);
+            border: 1.5px solid var(--border-color);
+            color: var(--text-main);
+            font-family: 'Fira Code', monospace;
+            font-size: 0.9rem;
+            border-radius: 10px;
+            outline: none;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+        }
+
+        .input-group input:focus {
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 14px rgba(10, 132, 255, 0.25);
+            background: rgba(0, 0, 0, 0.6);
+        }
+
+        .input-group input:focus + .material-symbols-outlined {
+            color: var(--neon-blue);
+        }
+
+        /* Password Show / Hide toggle button */
+        .password-toggle {
+            position: absolute;
+            right: 14px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            outline: none;
+            transition: color 0.3s;
+        }
+
+        .password-toggle:hover {
+            color: var(--text-main);
+        }
+
+        /* */
+        /* PREMIUM ANIMATED BUTTON WITH DOUBLE ORBIT LOADER */
+        .btn-login {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #1e6b30, #2ea44f);
+            border: none;
+            color: white;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            border-radius: 10px;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 4px 15px rgba(46, 164, 79, 0.3);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            font-family: 'Inter', sans-serif;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-login:hover {
+            background: linear-gradient(135deg, #238636, #30b154);
+            box-shadow: 0 6px 20px rgba(46, 164, 79, 0.45);
+            transform: translateY(-1.5px);
+        }
+
+        .btn-login:active {
+            transform: translateY(0.5px);
+        }
+
+        /* State Loading Modern */
+        .btn-login.loading {
+            background: rgba(255, 255, 255, 0.08) !important;
+            color: var(--text-muted);
+            cursor: wait;
+            pointer-events: none;
+            box-shadow: none;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .btn-login.loading #btn-text {
+            letter-spacing: 0.08em;
+            transition: letter-spacing 0.3s ease;
+        }
+
+        /* Premium Double Orbit Spinner */
+        .modern-orbit-loader {
+            display: none;
+            position: relative;
+            width: 20px;
+            height: 20px;
+        }
+
+        .btn-login.loading .modern-orbit-loader {
+            display: inline-block;
+        }
+
+        .orbit-outer {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 2px solid transparent;
+            border-top-color: var(--neon-blue);
+            border-radius: 50%;
+            animation: spin-clockwise 0.8s linear infinite;
+        }
+
+        .orbit-inner {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 14px;
+            height: 14px;
+            border: 2px solid transparent;
+            border-bottom-color: var(--neon-magenta);
+            border-radius: 50%;
+            animation: spin-counter-clockwise 0.5s linear infinite;
+        }
+
+        /* Error box with classic terminal style */
+        .error-msg {
+            color: #ffffff;
+            background: rgba(255, 69, 58, 0.15);
+            border: 1.5px solid rgba(255, 69, 58, 0.3);
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8rem;
+            margin-top: 20px;
+            padding: 12px;
+            border-radius: 10px;
+            display: none;
+            align-items: center;
+            gap: 8px;
+            text-align: left;
+            animation: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slide-up {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Shaking effect on incorrect password */
+        .shake {
+            animation: ios-shake 0.45s ease-in-out;
+        }
+
+        @keyframes ios-shake {
+            0%, 100% { transform: translateX(0); }
+            15%, 45%, 75% { transform: translateX(-8px); }
+            30%, 60%, 90% { transform: translateX(8px); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Ambient background colors -->
+    <div class="ambient-glow-wrapper">
+        <div class="ambient-glow"></div>
+        <div class="ambient-glow-2"></div>
+    </div>
+
+    <!-- Active Modern Constellation Grid Canvas -->
+    <canvas id="cyber-canvas"></canvas>
+
+    <!-- OVERLAY LAYAR BOOTING SIMULASI -->
+    <div id="boot-screen">
+        <div class="boot-layout">
+            <!-- Loader Sektor Tengah -->
+            <div class="boot-center-loader">
+                <div class="radial-loader-wrapper">
+                    <!-- Svg progress bar -->
+                    <svg class="radial-svg" viewBox="0 0 160 160">
+                        <defs>
+                            <linearGradient id="loader-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#0a84ff" />
+                                <stop offset="100%" stop-color="#bf5af2" />
+                            </linearGradient>
+                        </defs>
+                        <circle class="radial-track" cx="80" cy="80" r="70"></circle>
+                        <circle class="radial-progress-bar" id="radial-progress" cx="80" cy="80" r="70"></circle>
+                    </svg>
+                    <!-- Rings visual ornaments -->
+                    <div class="radial-inner-ring"></div>
+                    <div class="radial-outer-ring"></div>
+                    <!-- Percentage text -->
+                    <div class="loader-percentage">
+                        <span class="percentage-num" id="percentage-num">0</span>
+                        <span class="percentage-unit">SYSTEM</span>
+                    </div>
+                </div>
+                <div class="loader-status-text" id="loader-status-label">Initializing system kernel...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL CARD LOGIN UTAMA -->
+    <div class="login-box" id="auth-card">
+        <div class="header-section">
+            <div class="terminal-header">🔐 SECURITY PAM SHADOW</div>
+            <h1 class="title">Iyz Panel</h1>
+            <p class="subtitle">Verifikasi kredensial sistem Linux kamu</p>
+        </div>
+
+        <div class="input-group">
+            <label for="username">Username Linux</label>
+            <div class="input-wrapper">
+                <input type="text" id="username" placeholder="Contoh: root" required autocomplete="off" onkeydown="handleEnter(event, 'password')">
+                <span class="material-symbols-outlined">person</span>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label for="password">Password Linux</label>
+            <div class="input-wrapper">
+                <input type="password" id="password" placeholder="••••••••" required onkeydown="handleEnter(event, 'submit')">
+                <span class="material-symbols-outlined">lock</span>
+                <button type="button" class="password-toggle" onclick="togglePassVisibility()" id="pass-toggle-btn">
+                    <span class="material-symbols-outlined" id="eye-icon">visibility_off</span>
+                </button>
+            </div>
+        </div>
+
+        <button class="btn-login" id="submit-btn" onclick="doLogin()">
+            <!-- Futuristic Double-Orbit Loader -->
+            <div class="modern-orbit-loader" id="btn-loader">
+                <div class="orbit-outer"></div>
+                <div class="orbit-inner"></div>
+            </div>
+            <span id="btn-text">Verifikasi Sistem</span>
+            <span class="material-symbols-outlined" id="btn-arrow">arrow_forward</span>
+        </button>
+
+        <div class="error-msg" id="err-box"></div>
+    </div>
+
+    <script>
+        //        // === HIGH FIDELITY GEOMETRIC NETWORK MESH WITH PARALLAX ===
+        const canvas = document.getElementById('cyber-canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width = canvas.width = window.innerWidth;
+        let height = canvas.height = window.innerHeight;
+
+        let mouse = { x: null, y: null, targetX: null, targetY: null, radius: 150 };
+        let offset = { x: 0, y: 0 };
+
+        window.addEventListener('mousemove', (e) => {
+            mouse.targetX = e.clientX;
+            mouse.targetY = e.clientY;
+        });
+
+        window.addEventListener('mouseleave', () => {
+            mouse.targetX = null;
+            mouse.targetY = null;
+        });
+
+        window.addEventListener('resize', () => {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            initNodes();
+        });
+
+        // Struktur Floating Terminal Command Line fiktif (Linux Style)
+        const sysCommands = [
+            "sudo systemctl start yus-panel",
+            "kernel_panic: false [STABLE]",
+            "port: 22 [SSH_SECURE_ON]",
+            "ufw: allow incoming traffic",
+            "auth.log: connecting standard...",
+            "systemd[1]: active (running)",
+            "yus-dev@local:~$ authorized",
+            "sys_battery_threshold: 80%",
+            "net_speed: monitoring active",
+            "pam_unix(sudo:auth): correct"
+        ];
+
+        let nodes = [];
+        let commands = [];
+
+        class Node {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.baseX = this.x;
+                this.baseY = this.y;
+                this.vx = (Math.random() - 0.5) * 0.5;
+                this.vy = (Math.random() - 0.5) * 0.5;
+                this.radius = Math.random() * 2 + 1;
+                this.color = Math.random() > 0.7 ? '#bf5af2' : '#0a84ff';
+                this.pulse = Math.random() * Math.PI;
+            }
+
+            update() {
+                this.baseX += this.vx;
+                this.baseY += this.vy;
+
+                if (this.baseX < 0 || this.baseX > width) this.vx *= -1;
+                if (this.baseY < 0 || this.baseY > height) this.vy *= -1;
+
+                this.x = this.baseX + offset.x * 0.4;
+                this.y = this.baseY + offset.y * 0.4;
+
+                if (mouse.x !== null && mouse.y !== null) {
+                    const dx = mouse.x - this.x;
+                    const dy = mouse.y - this.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < mouse.radius) {
+                        const force = (mouse.radius - dist) / mouse.radius;
+                        this.x += (dx / dist) * force * 15;
+                        this.y += (dy / dist) * force * 15;
+                    }
+                }
+
+                this.pulse += 0.02;
+            }
+
+            draw() {
+                ctx.beginPath();
+                const currentRadius = this.radius + Math.sin(this.pulse) * 0.8;
+                ctx.arc(this.x, this.y, currentRadius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.shadowBlur = this.radius > 2 ? 6 : 0;
+                ctx.shadowColor = this.color;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        class FloatingCommand {
+            constructor() {
+                this.reset();
+                this.y = Math.random() * height;
+            }
+
+            reset() {
+                this.x = Math.random() * (width - 150) + 50;
+                this.y = height + 50;
+                this.speed = Math.random() * 0.4 + 0.15;
+                this.text = sysCommands[Math.floor(Math.random() * sysCommands.length)];
+                this.opacity = 0;
+                this.maxOpacity = Math.random() * 0.25 + 0.08;
+            }
+
+            update() {
+                this.y -= this.speed;
+                this.actualX = this.x + offset.x * 0.15;
+
+                if (this.y < height - 100 && this.y > 100) {
+                    if (this.opacity < this.maxOpacity) this.opacity += 0.005;
+                } else {
+                    this.opacity -= 0.005;
+                }
+
+                if (this.y < -50 || this.opacity < 0) {
+                    this.reset();
+                }
+            }
+
+            draw() {
+                ctx.font = '11px "Fira Code", monospace';
+                ctx.fillStyle = `rgba(48, 209, 88, ${this.opacity})`;
+                ctx.fillText(this.text, this.actualX, this.y);
+            }
+        }
+
+        function initNodes() {
+            nodes = [];
+            commands = [];
+            const count = Math.min(100, Math.floor((width * height) / 15000));
+            for (let i = 0; i < count; i++) {
+                nodes.push(new Node());
+            }
+            const cmdCount = Math.min(8, Math.floor(width / 220));
+            for (let i = 0; i < cmdCount; i++) {
+                commands.push(new FloatingCommand());
+            }
+        }
+
+        function animateCanvas() {
+            ctx.fillStyle = 'rgba(4, 2, 9, 0.4)';
+            ctx.fillRect(0, 0, width, height);
+
+            if (mouse.targetX !== null && mouse.targetY !== null) {
+                if (mouse.x === null) {
+                    mouse.x = mouse.targetX;
+                    mouse.y = mouse.targetY;
+                } else {
+                    mouse.x += (mouse.targetX - mouse.x) * 0.08;
+                    mouse.y += (mouse.targetY - mouse.y) * 0.08;
+                }
+                offset.x += ((width / 2 - mouse.targetX) * 0.05 - offset.x) * 0.05;
+                offset.y += ((height / 2 - mouse.targetY) * 0.05 - offset.y) * 0.05;
+            } else {
+                mouse.x = null;
+                mouse.y = null;
+                offset.x += (0 - offset.x) * 0.02;
+                offset.y += (0 - offset.y) * 0.02;
+            }
+
+            commands.forEach(cmd => {
+                cmd.update();
+                cmd.draw();
+            });
+
+            for (let i = 0; i < nodes.length; i++) {
+                nodes[i].update();
+                nodes[i].draw();
+
+                for (let j = i + 1; j < nodes.length; j++) {
+                    const dx = nodes[i].x - nodes[j].x;
+                    const dy = nodes[i].y - nodes[j].y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < 110) {
+                        ctx.beginPath();
+                        ctx.moveTo(nodes[i].x, nodes[i].y);
+                        ctx.lineTo(nodes[j].x, nodes[j].y);
+                        const edgeOpacity = (110 - dist) / 110 * 0.15;
+                        ctx.strokeStyle = `rgba(10, 132, 255, ${edgeOpacity})`;
+                        ctx.lineWidth = 0.8;
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            requestAnimationFrame(animateCanvas);
+        }
+
+        initNodes();
+        animateCanvas();
+
+        // === HIGH END MODERN BOOT ANIMATION LOGIC ===
+        const statusLabels = [
+            "Inisialisasi sistem kernel...",
+            "Memuat modul kemanan PAM...",
+            "Mendekripsi gerbang akses...",
+            "Menghubungkan ke secure core...",
+            "Sistem siap digunakan!"
+        ];
+
+        const radialProgressBar = document.getElementById('radial-progress');
+        const percentageNum = document.getElementById('percentage-num');
+        const statusLabel = document.getElementById('loader-status-label');
+
+        let bootProgress = 0;
+
+        function updateRadialProgress(progress) {
+            // Formula Dashoffset: circumference = 2 * PI * r (2 * 3.14159 * 70 = ~440)
+            const circumference = 440;
+            const offsetVal = circumference - (progress / 100) * circumference;
+            radialProgressBar.style.strokeDashoffset = offsetVal;
+            percentageNum.innerText = Math.round(progress);
+        }
+
+        function playModernBootloader() {
+            const totalDuration = 2500; // 2.5 Detik total booting
+            const intervalTime = 30; // Update setiap 30ms
+            const steps = totalDuration / intervalTime;
+            const increment = 100 / steps;
+
+            const bootTimer = setInterval(() => {
+                bootProgress += increment;
+
+                if (bootProgress >= 100) {
+                    bootProgress = 100;
+                    clearInterval(bootTimer);
+                    endBootingPhase();
+                }
+
+                updateRadialProgress(bootProgress);
+
+                // Update Status Text Label berdasarkan stage progress
+                const labelIndex = Math.min(
+                    statusLabels.length - 1, 
+                    Math.floor((bootProgress / 100) * statusLabels.length)
+                );
+                statusLabel.innerText = statusLabels[labelIndex];
+
+            }, intervalTime);
+        }
+
+        function endBootingPhase() {
+            setTimeout(() => {
+                const bootScreen = document.getElementById('boot-screen');
+                bootScreen.style.opacity = '0';
+                bootScreen.style.backdropFilter = 'blur(0px)';
+                
+                setTimeout(() => {
+                    bootScreen.style.display = 'none';
+                    const card = document.getElementById('auth-card');
+                    card.classList.add('active');
+                    document.getElementById('username').focus();
+                }, 800);
+            }, 500);
+        }
+
+        // Jalankan boot simulasi setelah halaman termuat utuh
+        window.onload = function() {
+            playModernBootloader();
+        };
+
+        //        // === INTERAKSI FORM LOGIN & VALIDASI ===
+        function togglePassVisibility() {
+            const passInput = document.getElementById('password');
+            const eyeIcon = document.getElementById('eye-icon');
+            if (passInput.type === 'password') {
+                passInput.type = 'text';
+                eyeIcon.innerText = 'visibility';
+                eyeIcon.style.color = 'var(--neon-blue)';
+            } else {
+                passInput.type = 'password';
+                eyeIcon.innerText = 'visibility_off';
+                eyeIcon.style.color = 'var(--text-muted)';
+            }
+        }
+
+        function handleEnter(event, target) {
+            if (event.key === 'Enter') {
+                if (target === 'password') {
+                    document.getElementById('password').focus();
+                } else if (target === 'submit') {
+                    doLogin();
+                }
+            }
+        }
+
+        async function doLogin() {
+            const u = document.getElementById('username').value.trim();
+            const p = document.getElementById('password').value;
+            const errBox = document.getElementById('err-box');
+            const submitBtn = document.getElementById('submit-btn');
+            const btnText = document.getElementById('btn-text');
+            const btnArrow = document.getElementById('btn-arrow');
+            const card = document.getElementById('auth-card');
+            
+            errBox.style.display = 'none';
+            
+            if(!u || !p) {
+                errBox.innerHTML = `<span class="material-symbols-outlined">warning</span>Username dan password wajib diisi!`;
+                errBox.style.display = 'flex';
+                card.classList.add('shake');
+                setTimeout(() => card.classList.remove('shake'), 500);
+                return;
+            }
+
+            // Memasang status Loading Modern pada tombol verifikasi
+            submitBtn.classList.add('loading');
+            btnArrow.style.display = 'none';
+            btnText.innerText = 'MEMVERIFIKASI...';
+
+            try {
+                const res = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: u, password: p })
+                });
+
+                if (res.ok) {
+                    btnText.innerText = 'AKSES DITERIMA!';
+                    submitBtn.style.background = 'var(--neon-green)';
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 500);
+                } else {
+                    const data = await res.json();
+                    
+                    // Kembalikan status tombol normal
+                    submitBtn.classList.remove('loading');
+                    btnArrow.style.display = 'inline-block';
+                    btnText.innerText = 'Verifikasi Sistem';
+
+                    // Berikan feedback kesalahan
+                    errBox.innerHTML = `<span class="material-symbols-outlined">error</span>${data.error}`;
+                    errBox.style.display = 'flex';
+                    
+                    // Trigger efek guncangan kartu login
+                    card.classList.add('shake');
+                    setTimeout(() => card.classList.remove('shake'), 500);
+                }
+            } catch (err) {
+                submitBtn.classList.remove('loading');
+                btnArrow.style.display = 'inline-block';
+                btnText.innerText = 'Verifikasi Sistem';
+
+                errBox.innerHTML = `<span class="material-symbols-outlined">wifi_off</span>Koneksi ke backend server gagal!`;
+                errBox.style.display = 'flex';
+                card.classList.add('shake');
+                setTimeout(() => card.classList.remove('shake'), 500);
+            }
+        }
+    </script>
+</body>
+</html>
